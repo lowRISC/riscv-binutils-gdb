@@ -3181,7 +3181,10 @@ _bfd_riscv_relax_pc  (bfd *abfd,
 	  return TRUE;
 
 	case R_RISCV_PCREL_HI20:
-          riscv_record_pcgp_hi_reloc (pcgp_relocs, rel->r_offset, symval, ELFNN_R_SYM(rel->r_info));
+          riscv_record_pcgp_hi_reloc (pcgp_relocs,
+				      rel->r_offset,
+				      symval + rel->r_addend,
+				      ELFNN_R_SYM(rel->r_info));
 	  /* We can delete the unnecessary AUIPC and reloc.  */
 	  rel->r_info = ELFNN_R_INFO (0, R_RISCV_NONE);
 	  *again = TRUE;
