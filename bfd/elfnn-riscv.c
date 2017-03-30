@@ -2711,6 +2711,7 @@ typedef struct riscv_pcgp_hi_reloc riscv_pcgp_hi_reloc;
 struct riscv_pcgp_hi_reloc
 {
   bfd_vma hi_sec_off;
+  bfd_vma hi_addend;
   bfd_vma hi_addr;
   unsigned hi_sym;
   riscv_pcgp_hi_reloc *next;
@@ -2756,12 +2757,17 @@ riscv_free_pcgp_relocs (riscv_pcgp_relocs *p, bfd *abfd, asection *sec)
 }
 
 static bfd_boolean
-riscv_record_pcgp_hi_reloc (riscv_pcgp_relocs *p, bfd_vma hi_sec_off, bfd_vma hi_addr, unsigned hi_sym)
+riscv_record_pcgp_hi_reloc (riscv_pcgp_relocs *p,
+			    bfd_vma hi_sec_off,
+			    bfd_vma hi_addend,
+			    bfd_vma hi_addr,
+			    unsigned hi_sym)
 {
   riscv_pcgp_hi_reloc *new = bfd_malloc (sizeof(*new));
   if (!new)
     return FALSE;
   new->hi_sec_off = hi_sec_off;
+  new->hi_addend = hi_addend;
   new->hi_addr = hi_addr;
   new->hi_sym = hi_sym;
   new->next = p->hi;
@@ -3174,16 +3180,19 @@ _bfd_riscv_relax_pc  (bfd *abfd,
 	{
 	case R_RISCV_PCREL_LO12_I:
 	  rel->r_info = ELFNN_R_INFO (sym, R_RISCV_GPREL_I);
+	  rel->r_addend += hi_reloc.hi_addend;
 	  return TRUE;
 
 	case R_RISCV_PCREL_LO12_S:
 	  rel->r_info = ELFNN_R_INFO (sym, R_RISCV_GPREL_S);
+	  rel->r_addend += hi_reloc.hi_addend;
 	  return TRUE;
 
 	case R_RISCV_PCREL_HI20:
           riscv_record_pcgp_hi_reloc (pcgp_relocs,
 				      rel->r_offset,
-				      symval + rel->r_addend,
+				      rel->r_addend,
+				      symval,
 				      ELFNN_R_SYM(rel->r_info));
 	  /* We can delete the unnecessary AUIPC and reloc.  */
 	  rel->r_info = ELFNN_R_INFO (0, R_RISCV_NONE);
